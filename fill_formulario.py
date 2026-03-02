@@ -295,6 +295,22 @@ def fill_formulario(data, template_path, output_path, modo='todo'):
     # Grupo sanguíneo - fila 13, cols 33-40
     w(ws2, 'AH13', a.get('grupo_sang', ''), 'center')
     
+    # Atención prioritaria - fila 13, checkboxes
+    # B13=Embarazada(cols 1-5), G13=Discapacidad(cols 6-9), K13=Catastrófica(cols 10-12), 
+    # N13=Lactancia(cols 13-16), R13=Adulto mayor(cols 17-19)
+    ap = a.get('atencion_prioritaria', [])
+    if 'Embarazada' in ap: ck(ws2, 'B13', True)
+    if 'Persona con discapacidad' in ap: ck(ws2, 'G13', True)
+    if 'Enfermedad catastrófica' in ap: ck(ws2, 'K13', True)
+    if 'Lactancia' in ap: ck(ws2, 'N13', True)
+    if 'Adulto mayor' in ap: ck(ws2, 'R13', True)
+    
+    # Sexo checkboxes - fila 13
+    # U13=hombre(cols 20-22), X13=mujer(cols 23-24)
+    sexo = a.get('sexo', '')
+    if sexo == 'M': ck(ws2, 'U13', True)
+    elif sexo == 'F': ck(ws2, 'X13', True)
+    
     # Lateralidad - fila 13, cols 41-58
     lat_raw = a.get('lateralidad', '')
     lat_text = 'Derecha' if lat_raw == 'Diestro' else 'Izquierda' if lat_raw == 'Zurdo' else lat_raw
@@ -338,6 +354,74 @@ def fill_formulario(data, template_path, output_path, modo='todo'):
     ws2.row_dimensions[24].height = 35
     w(ws2, 'B26', ant_fam)
     ws2.row_dimensions[26].height = 35
+    
+    # Transfusión y hormonal - fila 29
+    if c.get('aut_transfusion') == 'Sí': ck(ws2, 'O29', True)
+    if c.get('aut_transfusion') == 'No': ck(ws2, 'S29', True)
+    if c.get('trat_hormonal') == 'Sí':
+        ck(ws2, 'AH29', True)
+        w(ws2, 'AL29', c.get('trat_hormonal_detalle', ''))
+    if c.get('trat_hormonal') == 'No': ck(ws2, 'BE29', True)
+    
+    # Gineco-obstétricos - filas 32-36
+    gineco = c.get('gineco', {})
+    if gineco:
+        w(ws2, 'B33', gineco.get('fum', ''), 'center')
+        w(ws2, 'X33', gineco.get('gestas', ''), 'center')
+        w(ws2, 'AB33', gineco.get('partos', ''), 'center')
+        w(ws2, 'AE33', gineco.get('cesareas', ''), 'center')
+        w(ws2, 'AH33', gineco.get('abortos', ''), 'center')
+        # Planificación familiar
+        if gineco.get('planif_si'): ck(ws2, 'AL33', True)
+        if gineco.get('planif_cual'): w(ws2, 'AN33', gineco.get('planif_cual', ''))
+        if gineco.get('planif_no'): ck(ws2, 'AV33', True)
+        if gineco.get('planif_nr'): ck(ws2, 'AZ33', True)
+        # Exámenes gineco
+        examg = gineco.get('examenes', [])
+        for ei, ex in enumerate(examg[:2]):
+            row = 35 + ei
+            w(ws2, f'B{row}', ex.get('nombre', ''))
+            w(ws2, f'L{row}', ex.get('tiempo', ''), 'center')
+            w(ws2, f'U{row}', ex.get('resultado', ''))
+    
+    # Reproductivos masculinos - filas 39-41
+    masc = c.get('masculino', {})
+    if masc:
+        if masc.get('planif_si'): ck(ws2, 'AE40', True)
+        if masc.get('planif_cual'): w(ws2, 'AF40', masc.get('planif_cual', ''))
+        if masc.get('planif_no'): ck(ws2, 'AP40', True)
+        if masc.get('planif_nr'): ck(ws2, 'AY40', True)
+        examm = masc.get('examenes', [])
+        for ei, ex in enumerate(examm[:2]):
+            row = 40 + ei
+            w(ws2, f'B{row}', ex.get('nombre', ''))
+            w(ws2, f'O{row}', ex.get('tiempo', ''), 'center')
+    
+    # Consumo de sustancias - filas 44-46
+    sustancias = c.get('sustancias', [])
+    sust_rows = {'TABACO': 44, 'ALCOHOL': 45, 'OTRAS': 46}
+    for sust in sustancias:
+        nombre = (sust.get('nombre', '') or '').upper()
+        row = sust_rows.get(nombre, 46)
+        if sust.get('consumo'): w(ws2, f'N{row}', sust.get('consumo', ''))
+        if sust.get('estado') == 'ex': ck(ws2, f'S{row}', True)
+        if sust.get('abstinencia'): w(ws2, f'X{row}', sust.get('abstinencia', ''))
+        if sust.get('estado') == 'no': ck(ws2, f'AB{row}', True)
+    
+    # Estilo de vida - filas 44-46
+    estilo = c.get('estilo_vida', {})
+    if estilo:
+        for row in [44, 45, 46]:
+            if estilo.get('actividad'): w(ws2, f'AI{row}', estilo.get('actividad', ''))
+            if estilo.get('tiempo'): w(ws2, f'AL{row}', estilo.get('tiempo', ''))
+            break  # Solo poner en primera fila
+    
+    # Medicación habitual - filas 44-46
+    medicacion = c.get('medicacion', '')
+    if medicacion:
+        w(ws2, 'AU44', medicacion)
+    
+    w(ws2, 'B47', c.get('observacion_sustancias', ''))
     
     # Sección D - Enfermedad actual
     w(ws2, 'B51', d.get('descripcion', ''))
@@ -392,7 +476,9 @@ def fill_formulario(data, template_path, output_path, modo='todo'):
         if hallazgos.get(key):
             ck(ws2, cell, True)
     
-    w(ws2, 'B74', f.get('observaciones', f.get('observacion', '')))
+    w(ws2, 'B71', f.get('observaciones', f.get('observacion', '')))
+    ws2.row_dimensions[71].height = 35
+    ws2.row_dimensions[72].height = 35
     
     # ========================================
     # HOJA 3: FACTORES DE RIESGO (2/3)
@@ -485,7 +571,11 @@ def fill_formulario(data, template_path, output_path, modo='todo'):
     
     # Medidas preventivas
     medidas_txt = g.get('medidas', g.get('medidas_preventivas', '')).replace('\n', ' - ')
-    w(ws3, 'A68', medidas_txt)
+    w(ws3, 'G67', medidas_txt)
+    ws3.row_dimensions[67].height = 22
+    ws3.row_dimensions[68].height = 22
+    ws3.row_dimensions[69].height = 22
+    ws3.row_dimensions[70].height = 22
     
     # ========================================
     # HOJA 4: EVALUACION 3/3
@@ -495,15 +585,35 @@ def fill_formulario(data, template_path, output_path, modo='todo'):
     # Sección H - Historial laboral
     empleos = h_sec.get('empleos', [])
     for idx, emp in enumerate(empleos[:20]):  # max 20 filas
-        row = 6 + idx
+        row = 7 + idx
         w(ws4, f'B{row}', emp.get('centro', emp.get('empresa', '')))
         w(ws4, f'J{row}', emp.get('cargo', emp.get('actividad', '')))
+        # Anterior/Actual
+        if emp.get('estado') == 'ANTERIOR':
+            ck(ws4, f'W{row}', True)
+        elif emp.get('estado') == 'ACTUAL':
+            ck(ws4, f'Y{row}', True)
+        w(ws4, f'AA{row}', emp.get('tiempo', ''), 'center')
+        # Incidentes/Accidentes/Enfermedad
+        inc = emp.get('inc_data', {})
+        if inc.get('incidente'): ck(ws4, f'AC{row}', True)
+        if inc.get('accidente'): ck(ws4, f'AE{row}', True)
+        if inc.get('enfermedad'): ck(ws4, f'AH{row}', True)
+        if inc.get('calif_si'): ck(ws4, f'AK{row}', True)
+        if inc.get('calif_no'): ck(ws4, f'AM{row}', True)
+        w(ws4, f'AO{row}', inc.get('fecha', ''), 'center')
+        w(ws4, f'AR{row}', inc.get('especificar', ''))
+        w(ws4, f'BE{row}', inc.get('observaciones', emp.get('observaciones', '')))
     
-    # Sección I - Actividades extra
+    # Sección I - Actividades extra (filas 29-31 en hoja 4)
     extras = i_sec.get('actividades', [])
     for idx, act in enumerate(extras[:3]):
         row = 29 + idx
-        w(ws4, f'B{row}', act.get('descripcion', ''))
+        desc = act.get('desc', act.get('descripcion', ''))
+        tipo = act.get('tipo', '')
+        texto = f'{tipo} {desc}'.strip() if tipo else desc
+        w(ws4, f'B{row}', texto)
+        w(ws4, f'BA{row}', act.get('fecha', ''), 'center')
     
     # Sección J - Resultados exámenes
     categorias = j.get('categorias', [])
