@@ -24,19 +24,19 @@ def generar_pdf():
         if not data:
             return jsonify({'error': 'No se recibieron datos JSON'}), 400
         
-        # Crear archivo temporal para el PDF
+        # Modo: 'certificado' (hoja 1), 'formulario' (hojas 2,3,4), 'todo'
+        modo = data.pop('_modo', 'todo')
+        
         tmp_dir = tempfile.mkdtemp()
         pdf_path = os.path.join(tmp_dir, f'formulario_{uuid.uuid4().hex[:8]}.pdf')
         
-        # Llenar y generar PDF
-        result = fill_formulario(data, TEMPLATE, pdf_path)
+        result = fill_formulario(data, TEMPLATE, pdf_path, modo=modo)
         
         if not os.path.exists(pdf_path):
             return jsonify({'error': 'Error generando PDF'}), 500
         
-        # Nombre del archivo: apellido_nombre_fecha
-        pac = data.get('paciente', {})
-        nombre_archivo = f"formulario_{pac.get('apellido1','')}_{pac.get('nombre1','')}.pdf"
+        a = data.get('a', {})
+        nombre_archivo = f"{modo}_{a.get('ap1','')}_{a.get('n1','')}.pdf"
         nombre_archivo = nombre_archivo.replace(' ', '_').upper()
         
         return send_file(

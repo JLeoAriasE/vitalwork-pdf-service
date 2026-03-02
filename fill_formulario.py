@@ -7,11 +7,12 @@ from openpyxl import load_workbook
 from openpyxl.styles.borders import Border
 import json, sys, os, subprocess, tempfile
 
-def fill_formulario(data, template_path, output_path):
+def fill_formulario(data, template_path, output_path, modo='todo'):
     """
     data: dict con todos los datos de la ficha ocupacional
     template_path: ruta al formulario_final.xlsx (plantilla sin diagonales)
     output_path: ruta de salida (.pdf o .xlsx)
+    modo: 'certificado' (solo hoja 1), 'formulario' (hojas 2,3,4), 'todo' (todas)
     """
     wb = load_workbook(template_path)
     
@@ -354,9 +355,42 @@ def fill_formulario(data, template_path, output_path):
     w(ws2, 'AM55', e.get('imc', ''), 'center')
     w(ws2, 'AS55', e.get('perim_abd', e.get('perimetro', '')), 'center')
     
-    # Sección F - Examen físico (marcar con X las patologías)
-    exam_fisico = f.get('regiones', {})
-    # El mapeo exacto de cada región a su celda se hará con las coordenadas específicas
+    # Sección F - Examen físico
+    # La app guarda: f.hallazgos = {'1a':true, '10c':true, '12b':true}
+    # Clave = número_región + letra_item
+    # Mapeo hallazgo → celda checkbox en hoja 2 (celdas vacías de merge)
+    hallazgos = f.get('hallazgos', {})
+    hall_cell_map = {
+        # Región 1: Piel (cols 7-8)
+        '1a': 'H59', '1b': 'H60', '1c': 'H61',
+        # Región 2: Ojos
+        '2a': 'H63', '2b': 'H64', '2c': 'H65', '2d': 'H66', '2e': 'H68',
+        # Región 3: Oído (cols 19-20)
+        '3a': 'T59', '3b': 'T60', '3c': 'T62',
+        # Región 4: Orofaringe
+        '4a': 'T63', '4b': 'T64', '4c': 'T65', '4d': 'T66', '4e': 'T68',
+        # Región 5: Nariz (cols 28)
+        '5a': 'AC59', '5b': 'AC60', '5c': 'AC62', '5d': 'AC63',
+        # Región 6: Cuello
+        '6a': 'AC64', '6b': 'AC65',
+        # Región 7: Tórax
+        '7a': 'AC66', '7b': 'AC69',
+        # Región 8: Tórax Órganos (cols 35)
+        '8a': 'AJ59', '8b': 'AJ60', '8c': 'AJ61',
+        # Región 9: Abdomen
+        '9a': 'AJ62', '9b': 'AJ63',
+        # Región 10: Columna
+        '10a': 'AJ64', '10b': 'AJ66', '10c': 'AJ68',
+        # Región 11: Pelvis (cols 57-58)
+        '11a': 'BF59', '11b': 'BF60',
+        # Región 12: Extremidades
+        '12a': 'BF62', '12b': 'BF63', '12c': 'BF64',
+        # Región 13: Neurológico
+        '13a': 'BF65', '13b': 'BF66', '13c': 'BF67', '13d': 'BF68',
+    }
+    for key, cell in hall_cell_map.items():
+        if hallazgos.get(key):
+            ck(ws2, cell, True)
     
     w(ws2, 'B74', f.get('observaciones', f.get('observacion', '')))
     
@@ -366,29 +400,92 @@ def fill_formulario(data, template_path, output_path):
     ws3 = wb.worksheets[2]
     
     w(ws3, 'G2', b.get('puesto_ciuo', ''), 'center', 10)
-    ws3.row_dimensions[2].height = 25  # Puesto wrap
+    ws3.row_dimensions[2].height = 25
     
-    # Factores de riesgo - grid
+    # Riesgos: la app guarda {'fisicos_ruido_h1':true, 'quimicos_polvos_h2':true, ...}
+    # Formato: categoria_itemnormalizado_h{hora}
     riesgos = g.get('riesgos', {})
-    # Columnas de horas: G=1, I=2, K=3, M=4, N=5, O=6, P=7
-    hora_cols = {'1':'G', '2':'I', '3':'K', '4':'M', '5':'N', '6':'O', '7':'P'}
     
-    # Filas de riesgo (mapa de nombre → fila)
-    riesgo_rows = {
-        'temp_altas': 6, 'temp_bajas': 7, 'rad_ionizante': 8,
-        'rad_no_ionizante': 9, 'ruido': 10, 'vibracion': 11,
-        'iluminacion': 12, 'ventilacion': 13, 'fluido_electrico': 14,
-        # ... etc
+    # Columnas horas: openpyxl G=h1, I=h2, K=h3, M=h4, N=h5, O=h6, P=h7
+    h_col = {'h1':'G','h2':'I','h3':'K','h4':'M','h5':'N','h6':'O','h7':'P'}
+    
+    # Mapeo: nombre normalizado en la app → fila openpyxl
+    riesgo_filas = {
+        # FÍSICO
+        'fisicos_temperaturasaltas': 6, 'fisicos_temperaturasbajas': 7,
+        'fisicos_radiacinionizante': 8, 'fisicos_radiacinnoionizante': 9,
+        'fisicos_ruido': 10, 'fisicos_vibracin': 11,
+        'fisicos_iluminacin': 12, 'fisicos_ventilacin': 13,
+        'fisicos_fluidoelctrico': 14,
+        # SEGURIDAD - LOCATIVOS
+        'seguridad_faltadesealizacinaseodesorden': 16,
+        # SEGURIDAD - MECÁNICOS
+        'seguridad_atrapamientoentremquinasyosuperficies': 18,
+        'seguridad_atrapamientoentreojetos': 18,
+        'seguridad_atrapamientoentreobetos': 18,
+        'seguridad_cadadeojetos': 19, 'seguridad_cadadeobetos': 19,
+        'seguridad_cadasalmismonivel': 20,
+        'seguridad_cadasadiferentenivel': 21,
+        'seguridad_pinchazos': 22, 'seguridad_cortes': 23,
+        'seguridad_choquescolisinvehicular': 24,
+        'seguridad_atropellamientosporvehculos': 25,
+        'seguridad_proyeccindefluidos': 26,
+        'seguridad_proyeccindepartculasfragmentos': 27,
+        'seguridad_contactoconsuperficiesdetrabajo': 28,
+        # ELÉCTRICOS
+        'seguridad_contactoelctrico': 29,
+        # QUÍMICO
+        'quimicos_polvos': 31, 'quimicos_slidos': 32, 'quimicos_solidos': 32,
+        'quimicos_humos': 33, 'quimicos_lquidos': 34, 'quimicos_liquidos': 34,
+        'quimicos_vapores': 35, 'quimicos_aerosoles': 36,
+        'quimicos_neblinas': 37, 'quimicos_gaseosos': 38,
+        # BIOLÓGICO
+        'biologicos_virus': 40, 'biologicos_hongos': 41,
+        'biologicos_bacterias': 42, 'biologicos_parsitos': 43, 'biologicos_parasitos': 43,
+        'biologicos_exposicinavectores': 44, 'biologicos_exposicionavectores': 44,
+        'biologicos_exposicinaanimalesselvaticos': 45, 'biologicos_exposicionaanimalesselvaticos': 45,
+        # ERGONÓMICO
+        'ergonomicos_manejomanualdecargas': 47,
+        'ergonomicos_movimientosrepetitivos': 48, 'ergonomicos_movimientorepetitivos': 48,
+        'ergonomicos_postursforzadas': 49, 'ergonomicos_posturasforzadas': 49,
+        'ergonomicos_trabajosconpvd': 50,
+        'ergonomicos_diseoinadecuadodelpuesto': 51, 'ergonomicos_disenoinadecuadodelpuesto': 51,
+        # PSICOSOCIAL
+        'psicosociales_monotoniadeltrabajo': 53,
+        'psicosociales_sobrecargalaboral': 54,
+        'psicosociales_minuciosidaddelatarea': 55,
+        'psicosociales_altaresponsabilidad': 56,
+        'psicosociales_autonomaenlatomadedecisiones': 57,
+        'psicosociales_supervisinyestilosdedireccindeficiente': 58,
+        'psicosociales_conflictoderol': 59,
+        'psicosociales_faltadeclaridadenlasfunciones': 60,
+        'psicosociales_incorrectadistribucindeltrabajo': 61,
+        'psicosociales_turnosrotativos': 62,
+        'psicosociales_relacinesinterpersonales': 63, 'psicosociales_relacionesinterpersonales': 63,
+        'psicosociales_inestabilidadlaboral': 64,
+        'psicosociales_amenazadelincuencial': 65,
     }
     
-    for riesgo_key, row in riesgo_rows.items():
-        horas = riesgos.get(riesgo_key, [])
-        for h in horas:
-            col = hora_cols.get(str(h), '')
-            if col:
-                ws3[f'{col}{row}'] = 'X'
+    center = Alignment(horizontal='center', vertical='center')
+    for rkey, is_checked in riesgos.items():
+        if not is_checked:
+            continue
+        # Separar: 'fisicos_ruido_h1' → base='fisicos_ruido', hora='h1'
+        parts = rkey.rsplit('_', 1)
+        if len(parts) != 2 or not parts[1].startswith('h'):
+            continue
+        base_key = parts[0]
+        hora = parts[1]  # 'h1', 'h2', etc.
+        row = riesgo_filas.get(base_key)
+        col = h_col.get(hora)
+        if row and col:
+            ws3[f'{col}{row}'] = 'X'
+            ws3[f'{col}{row}'].alignment = center
+            ws3[f'{col}{row}'].font = Font(size=9)
     
-    w(ws3, 'A68', g.get('medidas', g.get('medidas_preventivas', '')))
+    # Medidas preventivas
+    medidas_txt = g.get('medidas', g.get('medidas_preventivas', '')).replace('\n', ' - ')
+    w(ws3, 'A68', medidas_txt)
     
     # ========================================
     # HOJA 4: EVALUACION 3/3
@@ -399,8 +496,8 @@ def fill_formulario(data, template_path, output_path):
     empleos = h_sec.get('empleos', [])
     for idx, emp in enumerate(empleos[:20]):  # max 20 filas
         row = 6 + idx
-        w(ws4, f'B{row}', emp.get('empresa', ''))
-        w(ws4, f'J{row}', emp.get('actividad', ''))
+        w(ws4, f'B{row}', emp.get('centro', emp.get('empresa', '')))
+        w(ws4, f'J{row}', emp.get('cargo', emp.get('actividad', '')))
     
     # Sección I - Actividades extra
     extras = i_sec.get('actividades', [])
@@ -545,6 +642,17 @@ def fill_formulario(data, template_path, output_path):
     w(ws4, 'AD73', prof_codigo, 'center')  # cols 29-32
     
     # ========================================
+    # ELIMINAR HOJAS SEGÚN MODO
+    # ========================================
+    if modo == 'certificado':
+        # Solo hoja 1 (CERTIFICADO) - eliminar hojas 2,3,4
+        for sheet_name in list(wb.sheetnames[1:]):
+            del wb[sheet_name]
+    elif modo == 'formulario':
+        # Solo hojas 2,3,4 - eliminar hoja 1 (CERTIFICADO)
+        del wb[wb.sheetnames[0]]
+    # modo 'todo' = no eliminar nada
+    
     # GUARDAR
     # ========================================
     xlsx_path = output_path.replace('.pdf', '.xlsx')
