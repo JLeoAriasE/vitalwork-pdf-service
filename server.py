@@ -6,6 +6,7 @@ POST /generar-pdf → recibe JSON, devuelve PDF
 from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 from fill_formulario import fill_formulario
+from fill_consentimiento import fill_consentimiento
 import tempfile, os, uuid
 
 app = Flask(__name__)
@@ -71,6 +72,35 @@ def generar_xlsx():
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
             download_name=nombre.replace(' ', '_').upper()
+        )
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/generar-consentimiento', methods=['POST'])
+def generar_consentimiento():
+    """Genera el documento de Consentimiento Informado (.docx)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No se recibieron datos JSON'}), 400
+        
+        tmp_dir = tempfile.mkdtemp()
+        docx_path = os.path.join(tmp_dir, f'consentimiento_{uuid.uuid4().hex[:8]}.docx')
+        
+        fill_consentimiento(data, docx_path)
+        
+        if not os.path.exists(docx_path):
+            return jsonify({'error': 'Error generando consentimiento'}), 500
+        
+        nombre = data.get('nombre', 'PACIENTE').replace(' ', '_')
+        nombre_archivo = f'CONSENTIMIENTO_{nombre}.docx'.upper()
+        
+        return send_file(
+            docx_path,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            as_attachment=True,
+            download_name=nombre_archivo
         )
     
     except Exception as e:
