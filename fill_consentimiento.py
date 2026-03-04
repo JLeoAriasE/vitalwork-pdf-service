@@ -71,26 +71,22 @@ def fill_consentimiento(data, output_path):
         xml = f.read()
     
     # === CLÁUSULA 5 ===
-    # Reemplazar nombre: los puntos están divididos por <w:proofErr> tags
-    # Patrón: <w:t>…</w:t>...<w:t>……………………………………</w:t>...<w:t>…,</w:t>
-    # Reemplazar todo el bloque entre "Yo," y "portador" con el nombre
+    # Reemplazar nombre con negritas
     import re
+    # El bloque entre "Yo," y "portador" contiene los puntos suspensivos
+    # Reemplazar con nombre en negrita
     xml = re.sub(
-        r'Yo,</w:t></w:r>.*?<w:r><w:t>portador',
-        f'Yo, {nombre}, portador',
+        r'Yo,</w:t></w:r>.*?portador',
+        f'Yo, </w:t></w:r><w:r><w:rPr><w:b/><w:bCs/></w:rPr><w:t>{nombre},</w:t></w:r><w:r><w:t xml:space="preserve"> portador',
         xml,
         flags=re.DOTALL,
         count=1
     )
-    # Arreglar el tag que quedó: necesita estar dentro de <w:r><w:t>
-    # El regex dejó: <w:r><w:rPr>...</w:rPr><w:t xml:space="preserve">Yo, NOMBRE, portador
-    # Eso está bien porque el texto sigue dentro del mismo <w:t>
     
-    # Reemplazar cédula + proveedor en el párrafo siguiente
-    # Este texto está en un solo <w:t> sin proofErr
+    # Reemplazar cédula con negritas + proveedor con negritas
     xml = xml.replace(
         '…………………………, otorgo mi consentimiento libre, previo, informado, específico e inequívoco a la Empresa/Institución …………………………………… y al profesional médico correspondiente',
-        f'{cedula}, otorgo mi consentimiento libre, previo, informado, específico e inequívoco a la Empresa/Institución {proveedor} y al profesional médico correspondiente'
+        f'</w:t></w:r><w:r><w:rPr><w:b/><w:bCs/></w:rPr><w:t>{cedula}</w:t></w:r><w:r><w:t>, otorgo mi consentimiento libre, previo, informado, específico e inequívoco a la Empresa/Institución </w:t></w:r><w:r><w:rPr><w:b/><w:bCs/></w:rPr><w:t>{proveedor}</w:t></w:r><w:r><w:t xml:space="preserve"> y al profesional médico correspondiente'
     )
     
     # === CLÁUSULA 6 ===
@@ -110,11 +106,7 @@ def fill_consentimiento(data, output_path):
     xml = re.sub(pattern, replacement, xml, flags=re.DOTALL)
     
     # === FIRMA ===
-    # NO poner nombre en la firma, dejar línea para que firme el paciente
-    xml = xml.replace(
-        '<w:t xml:space="preserve">……………………………. </w:t>',
-        '<w:t xml:space="preserve">……………………………. </w:t>'
-    )
+    # No se reemplaza - queda la línea de puntos original para firma manual
     
     # Guardar XML modificado
     with open(doc_xml_path, 'w', encoding='utf-8') as f:
