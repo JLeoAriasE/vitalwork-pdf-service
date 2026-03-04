@@ -71,11 +71,23 @@ def fill_consentimiento(data, output_path):
         xml = f.read()
     
     # === CLÁUSULA 5 ===
-    # Reemplazar nombre: "…………………………………………," → "NOMBRE,"
-    xml = xml.replace('…………………………………………,', f'{nombre},')
+    # Reemplazar nombre: los puntos están divididos por <w:proofErr> tags
+    # Patrón: <w:t>…</w:t>...<w:t>……………………………………</w:t>...<w:t>…,</w:t>
+    # Reemplazar todo el bloque entre "Yo," y "portador" con el nombre
+    import re
+    xml = re.sub(
+        r'Yo,</w:t></w:r>.*?<w:r><w:t>portador',
+        f'Yo, {nombre}, portador',
+        xml,
+        flags=re.DOTALL,
+        count=1
+    )
+    # Arreglar el tag que quedó: necesita estar dentro de <w:r><w:t>
+    # El regex dejó: <w:r><w:rPr>...</w:rPr><w:t xml:space="preserve">Yo, NOMBRE, portador
+    # Eso está bien porque el texto sigue dentro del mismo <w:t>
     
     # Reemplazar cédula + proveedor en el párrafo siguiente
-    # "…………………………, otorgo mi consentimiento... Empresa/Institución …………………………………… y al"
+    # Este texto está en un solo <w:t> sin proofErr
     xml = xml.replace(
         '…………………………, otorgo mi consentimiento libre, previo, informado, específico e inequívoco a la Empresa/Institución …………………………………… y al profesional médico correspondiente',
         f'{cedula}, otorgo mi consentimiento libre, previo, informado, específico e inequívoco a la Empresa/Institución {proveedor} y al profesional médico correspondiente'
@@ -98,10 +110,10 @@ def fill_consentimiento(data, output_path):
     xml = re.sub(pattern, replacement, xml, flags=re.DOTALL)
     
     # === FIRMA ===
-    # "……………………………. " → "NOMBRE "
+    # NO poner nombre en la firma, dejar línea para que firme el paciente
     xml = xml.replace(
         '<w:t xml:space="preserve">……………………………. </w:t>',
-        f'<w:t xml:space="preserve">{nombre} </w:t>'
+        '<w:t xml:space="preserve">……………………………. </w:t>'
     )
     
     # Guardar XML modificado
