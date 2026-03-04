@@ -7,6 +7,7 @@ from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 from fill_formulario import fill_formulario
 from fill_consentimiento import fill_consentimiento
+from fill_confidencialidad import fill_confidencialidad
 import tempfile, os, uuid
 
 app = Flask(__name__)
@@ -72,6 +73,35 @@ def generar_xlsx():
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
             download_name=nombre.replace(' ', '_').upper()
+        )
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/generar-confidencialidad', methods=['POST'])
+def generar_confidencialidad():
+    """Genera el Acuerdo de Confidencialidad (.docx)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No se recibieron datos JSON'}), 400
+        
+        tmp_dir = tempfile.mkdtemp()
+        docx_path = os.path.join(tmp_dir, f'confidencialidad_{uuid.uuid4().hex[:8]}.docx')
+        
+        fill_confidencialidad(data, docx_path)
+        
+        if not os.path.exists(docx_path):
+            return jsonify({'error': 'Error generando confidencialidad'}), 500
+        
+        medico = data.get('medico', 'MEDICO').replace(' ', '_')
+        nombre_archivo = f'CONFIDENCIALIDAD_{medico}.docx'.upper()
+        
+        return send_file(
+            docx_path,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            as_attachment=True,
+            download_name=nombre_archivo
         )
     
     except Exception as e:
