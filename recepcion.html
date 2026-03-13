@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2314b8a6'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='white'>🏥</text></svg>">
+<title>Recepción — Registro de Pacientes</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f172a;--c1:#1e293b;--c2:#334155;--ci:#0f172a;--bd:#334155;--t:#f1f5f9;--tm:#94a3b8;--a:#3b82f6;--as:rgba(59,130,246,.12);--ok:#10b981;--oks:rgba(16,185,129,.12);--w:#f59e0b;--ws:rgba(245,158,11,.12);--er:#ef4444;--tl:#14b8a6;--r:14px;--rs:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;-webkit-tap-highlight-color:transparent}
+.wrap{width:100%;max-width:580px}
+.header{text-align:center;margin-bottom:20px}
+.logo{width:60px;height:60px;background:linear-gradient(135deg,var(--tl),#06b6d4);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px}
+.header h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.header p{color:var(--tm);font-size:12px}
+.today-bar{background:var(--as);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:10px 16px;text-align:center;margin-bottom:16px;font-size:13px;font-weight:600}
+.today-bar span{color:var(--a)}
+.card{background:var(--c1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:14px}
+.card-h{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px}
+.card-h h3{font-size:14px;font-weight:600}
+.card-b{padding:20px}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--tm);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.fg .req{color:var(--er)}
+.fi{width:100%;padding:12px 14px;background:var(--ci);border:1px solid var(--bd);border-radius:var(--rs);color:var(--t);font-size:15px;font-family:inherit;outline:none;transition:border .15s;-webkit-appearance:none}
+.fi:focus{border-color:var(--tl);box-shadow:0 0 0 3px rgba(20,184,166,.15)}
+.fi::placeholder{color:#475569}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:14px 20px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .15s;width:100%;touch-action:manipulation}
+.bp{background:var(--tl);color:#fff}.bp:hover,.bp:active{background:#0d9488}
+.bs{background:var(--ok);color:#fff;font-size:16px}
+.bg{background:transparent;color:var(--tm);border:1px solid var(--bd)}
+
+.info-box{background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.2);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--tm);line-height:1.7}
+.info-box strong{color:var(--t)}
+
+.resumen{background:var(--ci);border:1px solid var(--bd);border-radius:10px;padding:16px;margin:16px 0;text-align:left}
+.resumen .ri{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--bd)}
+.resumen .ri:last-child{border-bottom:none}
+.resumen .ri label{color:var(--tm)}.resumen .ri span{font-weight:600}
+
+.success{text-align:center;padding:30px 10px}
+.success .ic{width:72px;height:72px;border-radius:50%;background:var(--oks);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:34px}
+.success h2{font-size:22px;margin-bottom:6px}
+.success p{color:var(--tm);font-size:13px;line-height:1.6}
+
+.turno-box{background:var(--as);border:2px solid var(--a);border-radius:12px;padding:16px;text-align:center;margin:16px 0}
+.turno-box .num{font-family:'Space Mono',monospace;font-size:36px;font-weight:700;color:var(--a)}
+.turno-box .lbl{font-size:11px;color:var(--tm);margin-top:2px}
+
+.counter{background:var(--c1);border:1px solid var(--bd);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.counter .cl{font-size:12px;color:var(--tm)}.counter .cv{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--tl)}
+
+.warn{background:var(--ws);border-radius:10px;padding:14px;margin-top:14px;text-align:left;font-size:12px;line-height:1.7}
+.warn strong{color:#92400e}
+
+@media(max-width:480px){.fr{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+const CFG={
+  SUPABASE_URL:'https://tzvdwkzhtvutiypkkmba.supabase.co',
+  SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6dmR3a3podHZ1dGl5cGtrbWJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTE2MTgsImV4cCI6MjA4Nzc4NzYxOH0.mhLVpvA_utETnM6E7fjhexhhFMQumm-xPd8oQhQm4v4',
+  CLINIC:'Clínica de Salud Ocupacional',
+  ADDR:'Machala, El Oro, Ecuador',
+  TEL:'+593999999999',
+};
+
+const NOW=new Date();
+const TDS=NOW.toISOString().split('T')[0];
+const H_INI_H=7,H_INI_M=30,INTERVALO=5;
+
+function getHoraFin(){try{const v=localStorage.getItem('mediagenda_hora_fin');if(v)return JSON.parse(v);}catch(e){}return{h:10,m:0};}
+function getBooked(){try{return JSON.parse(localStorage.getItem('mediagenda_booked')||'{}');}catch(e){return{};}}
+function setBooked(b){localStorage.setItem('mediagenda_booked',JSON.stringify(b));}
+
+function fD(d){return new Date(d+'T00:00:00').toLocaleDateString('es-EC',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});}
+function fT(t){const[h,m]=t.split(':');const hr=+h;return`${hr>12?hr-12:hr||12}:${m} ${hr>=12?'PM':'AM'}`;}
+function fNow(){return NOW.toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'});}
+
+function getSlots(){
+  const fin=getHoraFin();const finMin=fin.h*60+fin.m;const slots=[];
+  let cur=H_INI_H*60+H_INI_M;
+  while(cur<finMin){
+    const hh=String(Math.floor(cur/60)).padStart(2,'0');
+    const mm=String(cur%60).padStart(2,'0');
+    slots.push(`${hh}:${mm}`);cur+=INTERVALO;
+  }
+  return slots;
+}
+
+function getNextSlot(){
+  const booked=getBooked();
+  const dayBooked=booked[TDS]||[];
+  const slots=getSlots();
+  return slots.find(s=>!dayBooked.includes(s))||null;
+}
+
+function getTodayCount(){
+  const booked=getBooked();
+  return(booked[TDS]||[]).length;
+}
+
+let step=1,assignedSlot='';
+let formData={nombre:'',cedula:'',ciudad:'',empresa:'',email:'',genero:'',telefono:''};
+
+function render(){
+  const next=getNextSlot();
+  const count=getTodayCount();
+  const totalSlots=getSlots().length;
+  const remaining=totalSlots-count;
+
+  document.getElementById('app').innerHTML=`
+    <div class="header">
+      <div class="logo">🏥</div>
+      <h1>${CFG.CLINIC}</h1>
+      <p>📍 ${CFG.ADDR}</p>
+    </div>
+    <div class="today-bar">📅 <span>${fD(TDS)}</span> · 🕐 ${fNow()}</div>
+    ${remaining<=0&&step===1?noSlots():step===1?rForm():step===2?rConfirm():rSuccess()}`;
+}
+
+function noSlots(){
+  return`<div class="card"><div class="card-b">
+    <div class="success">
+      <div class="ic" style="background:var(--ws);font-size:30px">⏰</div>
+      <h2>Turnos Agotados</h2>
+      <p>Todos los turnos de hoy han sido asignados.<br>Por favor acérquese mañana o agende su turno en línea.</p>
+    </div>
+  </div></div>`;
+}
+
+// ═══ STEP 1: Formulario ═══
+if(!formData.docTipo)formData.docTipo='cedula';
+
+function rForm(){
+  const next=getNextSlot();
+  return`<div class="card"><div class="card-h"><h3>📋 Registro de Paciente</h3></div><div class="card-b">
+    <div class="info-box">Complete sus datos para asignarle un turno. Su próximo turno sería: <strong>${next?fT(next):'—'}</strong></div>
+    <div class="fr">
+      <div class="fg"><label>Tipo de Documento <span class="req">*</span></label>
+        <select class="fi" id="f_docTipo" onchange="formData.docTipo=this.value;document.getElementById('f_cedula').placeholder=this.value==='cedula'?'10 dígitos':'Número de pasaporte';document.getElementById('f_cedula').maxLength=this.value==='cedula'?10:20">
+          <option value="cedula" ${formData.docTipo==='cedula'?'selected':''}>🪪 Cédula</option>
+          <option value="pasaporte" ${formData.docTipo==='pasaporte'?'selected':''}>📘 Pasaporte</option>
+        </select>
+      </div>
+      <div class="fg"><label>N° de Documento <span class="req">*</span></label><input class="fi" id="f_cedula" value="${formData.cedula}" placeholder="${formData.docTipo==='cedula'?'10 dígitos':'Número de pasaporte'}" maxlength="${formData.docTipo==='cedula'?10:20}" inputmode="numeric" pattern="[0-9]*" autocomplete="off" onblur="buscarPaciente(this.value)"></div>
+    </div>
+    <div id="paciente_found" style="display:none;background:var(--oks);border:1px solid var(--ok);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px"></div>
+    <div class="fr">
+      <div class="fg"><label>Primer Apellido <span class="req">*</span></label><input class="fi" id="f_ap1" value="${formData.ap1||''}" placeholder="Ej: García" autocomplete="off"></div>
+      <div class="fg"><label>Segundo Apellido <span class="req">*</span></label><input class="fi" id="f_ap2" value="${formData.ap2||''}" placeholder="Ej: López" autocomplete="off"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Primer Nombre <span class="req">*</span></label><input class="fi" id="f_n1" value="${formData.n1||''}" placeholder="Ej: María" autocomplete="off"></div>
+      <div class="fg"><label>Segundo Nombre <span class="req">*</span></label><input class="fi" id="f_n2" value="${formData.n2||''}" placeholder="Ej: Isabel" autocomplete="off"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Género <span class="req">*</span></label>
+        <select class="fi" id="f_genero">
+          <option value="" ${!formData.genero?'selected':''}>Seleccione...</option>
+          <option value="Masculino" ${formData.genero==='Masculino'?'selected':''}>👨 Masculino</option>
+          <option value="Femenino" ${formData.genero==='Femenino'?'selected':''}>👩 Femenino</option>
+        </select>
+      </div>
+      <div class="fg"><label>Celular <span class="req">*</span></label><input class="fi" id="f_telefono" value="${formData.telefono||''}" placeholder="0999999999" maxlength="10" inputmode="numeric" pattern="[0-9]*" autocomplete="tel"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Ciudad <span class="req">*</span></label><input class="fi" id="f_ciudad" value="${formData.ciudad}" placeholder="Ej: Machala"></div>
+      <div class="fg"><label>Empresa <span class="req">*</span></label><input class="fi" id="f_empresa" value="${formData.empresa}" placeholder="Nombre de la empresa"></div>
+    </div>
+    <div class="fg"><label>Correo Electrónico</label><input class="fi" id="f_email" value="${formData.email}" placeholder="correo@mail.com" type="email" autocomplete="email"></div>
+    <button class="btn bp" onclick="validate()">Registrar Paciente →</button>
+  </div></div>`;
+}
+
+async function buscarPaciente(doc){
+  if(!doc||doc.length<5)return;
+  const ced=encodeURIComponent(doc.trim());
+  const res=await sbQuery('pacientes','GET',null,`select=*&cedula=eq.${ced}`);
+  const box=document.getElementById('paciente_found');
+  if(res&&res.length>0){
+    const p=res[0];
+    box.style.display='block';
+    box.innerHTML=`✅ <strong>Paciente encontrado:</strong> ${p.nombre} · ${p.empresa||''} · ${p.ciudad||''}<br><span style="font-size:11px;color:var(--tm)">Los datos se autocompletaron. Puede modificarlos si es necesario.</span>`;
+    const partes=(p.nombre||'').split(' ').filter(Boolean);
+    const ap1=partes[0]||'';const ap2=partes[1]||'';const n1=partes[2]||'';const n2=partes.slice(3).join(' ')||'';
+    document.getElementById('f_ap1').value=ap1;
+    document.getElementById('f_ap2').value=ap2;
+    document.getElementById('f_n1').value=n1;
+    document.getElementById('f_n2').value=n2;
+    document.getElementById('f_genero').value=p.genero||'';
+    document.getElementById('f_telefono').value=p.telefono||'';
+    document.getElementById('f_ciudad').value=p.ciudad||'';
+    document.getElementById('f_empresa').value=p.empresa||'';
+    document.getElementById('f_email').value=p.email||'';
+    formData.ap1=ap1;formData.ap2=ap2;formData.n1=n1;formData.n2=n2;
+    formData.nombre=p.nombre||'';formData.genero=p.genero||'';formData.telefono=p.telefono||'';
+    formData.ciudad=p.ciudad||'';formData.empresa=p.empresa||'';formData.email=p.email||'';
+  }else{
+    box.style.display='none';
+  }
+}
+
+function validate(){
+  formData.ap1=(document.getElementById('f_ap1')?.value||'').trim();
+  formData.ap2=(document.getElementById('f_ap2')?.value||'').trim();
+  formData.n1=(document.getElementById('f_n1')?.value||'').trim();
+  formData.n2=(document.getElementById('f_n2')?.value||'').trim();
+  formData.nombre=[formData.ap1,formData.ap2,formData.n1,formData.n2].filter(Boolean).join(' ');
+  formData.cedula=document.getElementById('f_cedula').value.trim();
+  formData.genero=document.getElementById('f_genero').value;
+  formData.telefono=document.getElementById('f_telefono').value.trim();
+  formData.ciudad=document.getElementById('f_ciudad').value.trim();
+  formData.empresa=document.getElementById('f_empresa').value.trim();
+  formData.email=document.getElementById('f_email').value.trim();
+
+  if(!formData.ap1){alert('Ingrese el Primer Apellido');return;}
+  if(!formData.ap2){alert('Ingrese el Segundo Apellido');return;}
+  if(!formData.n1){alert('Ingrese el Primer Nombre');return;}
+  if(!formData.n2){alert('Ingrese el Segundo Nombre');return;}
+  if(formData.docTipo==='cedula'){
+    if(!formData.cedula||formData.cedula.length!==10||!/^\d{10}$/.test(formData.cedula)){alert('La cédula debe tener exactamente 10 dígitos numéricos');return;}
+  }else{
+    if(!formData.cedula||formData.cedula.length<5){alert('El pasaporte debe tener mínimo 5 caracteres');return;}
+  }
+  if(!formData.genero){alert('Seleccione el género');return;}
+  if(!formData.telefono||formData.telefono.length<7){alert('Ingrese el número de celular');return;}
+  if(!formData.ciudad){alert('Ingrese la ciudad');return;}
+  if(!formData.empresa){alert('Ingrese la empresa');return;}
+
+  assignedSlot=getNextSlot();
+  if(!assignedSlot){alert('No hay turnos disponibles');return;}
+
+  step=2;render();
+}
+
+// ═══ STEP 2: Confirmar ═══
+function rConfirm(){
+  return`<div class="card"><div class="card-h"><h3>✅ Confirmar Registro</h3></div><div class="card-b">
+    <div class="resumen">
+      <div class="ri"><label>Paciente</label><span>${formData.nombre}</span></div>
+      <div class="ri"><label>Cédula</label><span>${formData.cedula}</span></div>
+      <div class="ri"><label>Género</label><span>${formData.genero}</span></div>
+      <div class="ri"><label>Celular</label><span>${formData.telefono}</span></div>
+      <div class="ri"><label>Ciudad</label><span>${formData.ciudad}</span></div>
+      <div class="ri"><label>Empresa</label><span>${formData.empresa}</span></div>
+      <div class="ri"><label>Email</label><span>${formData.email||'—'}</span></div>
+    </div>
+    <div class="turno-box">
+      <div class="lbl">TURNO ASIGNADO</div>
+      <div class="num">${fT(assignedSlot)}</div>
+      <div class="lbl">${fD(TDS)}</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn bg" onclick="step=1;render()">← Corregir</button>
+      <button class="btn bs" onclick="confirmar()">✅ Confirmar</button>
+    </div>
+  </div></div>`;
+}
+
+// ═══ SUPABASE API ═══
+const SB_URL='https://tzvdwkzhtvutiypkkmba.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6dmR3a3podHZ1dGl5cGtrbWJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTE2MTgsImV4cCI6MjA4Nzc4NzYxOH0.mhLVpvA_utETnM6E7fjhexhhFMQumm-xPd8oQhQm4v4';
+
+async function sbQuery(table,method,body,filters){
+  let u=`${SB_URL}/rest/v1/${table}`;
+  const h={'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'};
+  if(filters)u+=`?${filters}`;
+  if(method==='GET')delete h['Prefer'];
+  try{
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),8000);
+    const r=await fetch(u,{method,headers:h,body:body?JSON.stringify(body):undefined,signal:ctrl.signal});
+    clearTimeout(timer);
+    if(!r.ok){console.warn('SB:',r.status);return null;}
+    const text=await r.text();return text?JSON.parse(text):[];
+  }catch(e){console.warn('SB offline:',e.message);return null;}
+}
+
+// Load booked slots from Supabase on init
+async function loadBookedFromDB(){
+  const citas=await sbQuery('citas','GET',null,`select=fecha,hora&fecha=eq.${TDS}`);
+  if(citas&&citas.length>0){
+    const booked=getBooked();
+    if(!booked[TDS])booked[TDS]=[];
+    citas.forEach(c=>{
+      if(!booked[TDS].includes(c.hora))booked[TDS].push(c.hora);
+    });
+    setBooked(booked);
+    render();
+  }
+}
+loadBookedFromDB();
+
+function confirmar(){
+  // Guardar en localStorage (fallback)
+  let pts=[];try{pts=JSON.parse(localStorage.getItem('mediagenda_pts')||'[]');}catch(e){}
+  const pid=crypto.randomUUID?crypto.randomUUID():'p_'+Math.random().toString(36).substr(2,9);
+  let existing=pts.find(p=>p.cedula===formData.cedula);
+  if(!existing){
+    existing={id:pid,nombre:formData.nombre,cedula:formData.cedula,telefono:formData.telefono||'',email:formData.email,genero:formData.genero||'',direccion:'',ciudad:formData.ciudad,empresa:formData.empresa,cargo:'',fecha_nacimiento:formData.fecha_nacimiento||''};
+    pts.push(existing);
+  }else{
+    existing.nombre=formData.nombre;existing.ciudad=formData.ciudad;existing.empresa=formData.empresa;
+    existing.telefono=formData.telefono||existing.telefono;existing.genero=formData.genero||existing.genero;
+    existing.fecha_nacimiento=formData.fecha_nacimiento||existing.fecha_nacimiento;
+    if(formData.email)existing.email=formData.email;
+  }
+  localStorage.setItem('mediagenda_pts',JSON.stringify(pts));
+
+  const aid=crypto.randomUUID?crypto.randomUUID():'a_'+Math.random().toString(36).substr(2,9);
+  let apts=[];try{apts=JSON.parse(localStorage.getItem('mediagenda_apt')||'[]');}catch(e){}
+  apts.push({id:aid,pid:existing.id,tipo:'Laboratorio',fecha:TDS,hora:assignedSlot,estado:'en_proceso',asistio:true,exAsig:false,origen:'recepcion'});
+  localStorage.setItem('mediagenda_apt',JSON.stringify(apts));
+
+  // Marcar turno ocupado
+  const booked=getBooked();
+  if(!booked[TDS])booked[TDS]=[];
+  booked[TDS].push(assignedSlot);
+  setBooked(booked);
+
+  step=3;render();
+
+  // ═══ GUARDAR EN SUPABASE (async, no bloquea la UI) ═══
+  (async()=>{
+    try{
+      const ced=encodeURIComponent(formData.cedula);
+      let patientId=pid;
+      // Check if patient exists
+      const existingDB=await sbQuery('pacientes','GET',null,`select=id&cedula=eq.${ced}`);
+      if(existingDB&&existingDB.length>0){
+        patientId=existingDB[0].id;
+        await sbQuery('pacientes','PATCH',{
+          nombre:formData.nombre,ciudad:formData.ciudad,empresa:formData.empresa,
+          telefono:formData.telefono||'',genero:formData.genero||'',
+          fecha_nacimiento:formData.fecha_nacimiento||'',
+          email:formData.email||''
+        },`cedula=eq.${ced}`);
+        // Actualizar pid local para que la cita apunte al paciente correcto
+        existing.id=patientId;
+        localStorage.setItem('mediagenda_pts',JSON.stringify(pts));
+        // Actualizar la cita local también
+        const aptLocal=JSON.parse(localStorage.getItem('mediagenda_apt')||'[]');
+        const citaLocal=aptLocal.find(a=>a.id===aid);
+        if(citaLocal){citaLocal.pid=patientId;localStorage.setItem('mediagenda_apt',JSON.stringify(aptLocal));}
+        console.log('📝 Paciente actualizado:',patientId);
+      }else{
+        const res=await sbQuery('pacientes','POST',{
+          id:pid,nombre:formData.nombre,cedula:formData.cedula,telefono:formData.telefono||'',
+          email:formData.email||'',genero:formData.genero||'',direccion:'',ciudad:formData.ciudad,
+          empresa:formData.empresa,cargo:'',fecha_nacimiento:formData.fecha_nacimiento||''
+        });
+        if(res&&res[0]){patientId=res[0].id;existing.id=patientId;localStorage.setItem('mediagenda_pts',JSON.stringify(pts));}
+        console.log('👤 Paciente creado:',patientId);
+      }
+      const citaRes=await sbQuery('citas','POST',{
+        id:aid,pid:patientId,tipo:'Laboratorio',fecha:TDS,hora:assignedSlot,
+        estado:'en_proceso',asistio:true,ex_asig:false,origen:'recepcion'
+      });
+      if(citaRes)console.log('✅ Guardado en Supabase');
+      else console.warn('⚠️ Cita no guardada');
+    }catch(e){
+      console.warn('⚠️ Error Supabase:',e);
+    }
+  })();
+  setTimeout(()=>{nuevoPaciente();},8000);
+}
+
+// ═══ STEP 3: Éxito ═══
+function rSuccess(){
+  return`<div class="card"><div class="card-b">
+    <div class="success">
+      <div class="ic">✅</div>
+      <h2>¡Registrado!</h2>
+      <p><strong>${formData.nombre}</strong></p>
+      <div class="turno-box">
+        <div class="lbl">SU TURNO</div>
+        <div class="num">${fT(assignedSlot)}</div>
+        <div class="lbl">${formData.empresa} · ${formData.ciudad}</div>
+      </div>
+      <div class="warn">
+        <strong>⚠️ Recomendaciones:</strong><br>
+        • Espere a ser llamado/a<br>
+        • Tenga su <strong>cédula original</strong> a la mano<br>
+        • Si tiene exámenes de sangre: <strong>ayuno de 8–12 horas</strong>
+      </div>
+      <p style="margin-top:14px;font-size:11px;color:var(--tm)">Esta pantalla se reiniciará automáticamente en unos segundos...</p>
+      <button class="btn bg" style="margin-top:10px" onclick="nuevoPaciente()">📝 Registrar Otro Paciente</button>
+    </div>
+  </div></div>`;
+}
+
+function nuevoPaciente(){
+  step=1;assignedSlot='';
+  formData={nombre:'',ap1:'',ap2:'',n1:'',n2:'',cedula:'',ciudad:'',empresa:'',email:'',genero:'',telefono:'',docTipo:'cedula'};
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
